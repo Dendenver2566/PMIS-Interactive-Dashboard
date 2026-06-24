@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSMIS Dashboard – พฤษภาคม 2569</title>
+    <meta name="description" content="รายงานการเบิกจ่ายเงินเดือน ค่าจ้าง และบำเหน็จบำนาญ ประจำเดือน พฤษภาคม 2569">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            --sidebar-hover: #e2e8f0;
+            --sidebar-active: #2563eb;
+            --accent: #2563eb;
+            --accent-light: #3b82f6;
+            --accent2: #0ea5e9;
+            --accent3: #ea580c;
+            --gold: #f97316;
+            --card-bg: #ffffff;
+            --body-bg: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-heading: #1e3a8a;
+            --border-color: #e2e8f0;
+            --table-hover: #f1f5f9;
+            --table-header: #f8fafc;
+            --shadow-card: 0 4px 20px -2px rgba(37,99,235,0.06), 0 2px 4px -1px rgba(37,99,235,0.03);
+            --shadow-hover: 0 12px 30px -4px rgba(37,99,235,0.12), 0 4px 8px -2px rgba(37,99,235,0.06);
+        }
+
+        body.dark-theme {
+            --sidebar-bg: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+            --sidebar-hover: #1f2937;
+            --sidebar-active: #3b82f6;
+            --accent: #3b82f6;
+            --accent-light: #60a5fa;
+            --accent2: #38bdf8;
+            --accent3: #f97316;
+            --gold: #f97316;
+            --card-bg: #1e293b;
+            --body-bg: #0b0f19;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-heading: #38bdf8;
+            --border-color: #374151;
+            --table-hover: #374151;
+            --table-header: #111827;
+            --shadow-card: 0 4px 20px -2px rgba(0,0,0,0.5), 0 2px 4px -1px rgba(0,0,0,0.3);
+            --shadow-hover: 0 12px 30px -4px rgba(0,0,0,0.7), 0 4px 8px -2px rgba(0,0,0,0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans Thai', 'Sarabun', sans-serif;
+            background: var(--body-bg);
+            color: var(--text-main);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .app-layout { display: flex; height: 100vh; overflow: hidden; }
+
+        /* ─── SCROLLBAR ─── */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent-light); }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: 280px; flex-shrink: 0; display: flex; flex-direction: column;
+            background: var(--sidebar-bg); border-right: 1px solid var(--border-color);
+            overflow-y: auto; transition: all 0.3s ease;
+        }
+        .sidebar-brand { padding: 22px 20px 18px; border-bottom: 1px solid var(--border-color); }
+        .sidebar-brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .sidebar-brand-title { font-weight: 800; font-size: 16px; color: var(--text-heading); line-height: 1.2; }
+        .sidebar-brand-sub { font-size: 10px; color: var(--accent); font-weight: 700; letter-spacing: 0.05em; }
+        .sidebar-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+        /* Theme Toggle */
+        .theme-toggle-btn {
+            width: 100%; background: var(--table-hover); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 8px 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            color: var(--text-main); font-size: 12px; font-weight: 600;
+            transition: all 0.2s ease; font-family: inherit;
+        }
+        .theme-toggle-btn:hover { background: var(--border-color); }
+
+        /* KPI mini */
+        .kpi-mini { background: var(--table-hover); border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .kpi-mini-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+        .kpi-mini-value { font-size: 12px; font-weight: 800; }
+
+        /* Filter */
+        .filter-label {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; padding: 8px 10px; border-radius: 10px;
+            transition: background 0.15s ease; user-select: none;
+        }
+        .filter-label:hover { background: var(--table-hover); }
+        .checkbox-box {
+            width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+            border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease; background: var(--card-bg);
+        }
+        .checkbox-box.checked { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: var(--accent); }
+
+        /* ─── HEADER ─── */
+        .header-grad {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 40%, #0ea5e9 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        body.dark-theme .header-grad {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0369a1 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .header-title { color: white; font-weight: 800; font-size: 20px; letter-spacing: -0.01em; }
+        .header-sub { color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 3px; }
+
+        .share-btn {
+            display: flex; align-items: center; gap: 7px;
+            background: rgba(255,255,255,0.18); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.35); border-radius: 10px;
+            padding: 9px 18px; color: white; font-weight: 700; font-size: 13px;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .share-btn:hover { background: rgba(255,255,255,0.28); }
+
+        /* ─── CARDS ─── */
+        .card {
+            background: var(--card-bg); border-radius: 16px;
+            box-shadow: var(--shadow-card); border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 24px;
+        }
+        .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-4px); border-color: var(--accent-light); }
+
+        .kpi-card {
+            border-radius: 14px; padding: 16px 20px;
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-card); display: flex; flex-direction: column; align-items: center; text-align: center;
+            transition: all 0.3s ease;
+        }
+        .kpi-card:hover { background: var(--table-hover); border-color: var(--accent-light); transform: translateY(-2px); }
+
+        /* Section Header */
+        .section-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); }
+        .section-header-left { display: flex; align-items: center; gap: 10px; }
+        .section-badge {
+            width: 32px; height: 32px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800; font-size: 14px; flex-shrink: 0;
+        }
+        .section-title { font-weight: 800; font-size: 16px; color: var(--text-heading); }
+
+        /* ─── TABLE ─── */
+        table { border-collapse: separate; border-spacing: 0; width: 100%; }
+        thead th {
+            background: var(--table-header); color: var(--text-muted);
+            font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+            padding: 12px 14px; position: sticky; top: 0; z-index: 1;
+            border-bottom: 2px solid var(--border-color);
+            transition: background 0.3s, color 0.3s;
+        }
+        thead th:first-child { border-radius: 8px 0 0 8px; }
+        thead th:last-child  { border-radius: 0 8px 8px 0; }
+        tbody tr { transition: background 0.15s ease; }
+        tbody tr:hover td { background: var(--table-hover); }
+        tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--text-main); transition: background 0.3s, color 0.3s, border-color 0.3s; }
+
+        .sortable-header { cursor: pointer; user-select: none; transition: color 0.15s ease; }
+        .sortable-header:hover { color: var(--accent) !important; }
+
+        /* Search */
+        .search-container { position: relative; width: 100%; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+        .search-input {
+            width: 100%; padding: 8px 36px 8px 36px; border-radius: 8px;
+            border: 1px solid var(--border-color); background: var(--card-bg);
+            color: var(--text-main); font-family: inherit; font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        .search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 16px; display: none; }
+
+        /* Export */
+        .export-btn {
+            background: transparent; border: 1px solid var(--border-color); border-radius: 6px;
+            padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--text-muted);
+            cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .export-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--table-hover); }
+
+        /* ─── GRID / LAYOUT ─── */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .full-width { grid-column: 1 / -1; }
+
+        .stat-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+        .stat-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        .stat-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        .conscript-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+
+        .stat-box {
+            background: linear-gradient(135deg, rgba(30,64,175,0.06), rgba(14,165,233,0.06));
+            border-radius: 12px; padding: 12px; text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .stat-box-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+        .stat-box-value { font-weight: 800; font-size: 18px; color: var(--accent); }
+        .stat-box-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .stat-box-divider { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-color); }
+        .stat-box-secondary { font-weight: 700; font-size: 13px; color: var(--accent3); }
+
+        .budget-stat-box { border-radius: 12px; padding: 14px 18px; border: 1px solid var(--border-color); }
+        .budget-stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+        .budget-stat-value { font-weight: 800; font-size: 22px; }
+        .budget-stat-unit { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        .conscript-tag { background: var(--table-header); border-radius: 8px; padding: 8px; text-align: center; }
+        .conscript-tag-name { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+        .conscript-tag-val { font-weight: 800; font-size: 12px; }
+
+        .cert-box { background: var(--table-header); border-radius: 10px; padding: 12px; border: 1px solid var(--border-color); }
+        .cert-box-title { font-size: 12px; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; }
+        .cert-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .cert-row-label { font-size: 11px; color: var(--text-muted); }
+        .cert-row-value { font-weight: 800; font-size: 13px; }
+        .cert-progress-track { margin-top: 8px; height: 5px; border-radius: 9999px; background: var(--border-color); overflow: hidden; }
+        .cert-progress-fill { height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #1e40af, #f97316); }
+        .cert-pct { font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 3px; font-weight: 600; }
+
+        /* ─── CHART CONTAINER ─── */
+        .chart-container { position: relative; width: 100%; }
+
+        /* ─── MODAL ─── */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(8px);
+            z-index: 999; display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-box {
+            background: var(--card-bg); border-radius: 20px; padding: 32px;
+            width: 90%; max-width: 480px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.15); border: 1px solid var(--border-color);
+            animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-weight: 800; font-size: 18px; color: var(--text-heading); }
+        .modal-subtitle { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+        .modal-close {
+            border: none; background: var(--table-hover); border-radius: 8px;
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--text-main); font-size: 18px;
+        }
+        .modal-link-row { display: flex; gap: 8px; margin-bottom: 16px; }
+        .modal-link-box {
+            flex: 1; background: var(--table-hover); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--text-main);
+            font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .modal-copy-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white; border: none; border-radius: 10px; padding: 10px 16px;
+            cursor: pointer; font-weight: 700; font-size: 13px; display: flex;
+            align-items: center; gap: 6px; white-space: nowrap; font-family: inherit;
+            transition: all 0.2s;
+        }
+        .modal-copy-btn.copied { background: linear-gradient(135deg, #10b981, #059669); }
+
+        /* Empty state */
+        .empty-state { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); }
+        .empty-state p { margin-top: 16px; font-size: 16px; }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-card { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+        .total-row { background: rgba(37,99,235,0.06); font-weight: 800; }
+        .total-row td { color: var(--accent); }
+        .total-row-orange { background: rgba(234,88,12,0.06); font-weight: 800; position: sticky; bottom: 0; }
+        .total-row-orange td { color: var(--accent3); }
+
+        .pension-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; margin-right: 8px; vertical-align: middle; }
+        mark.highlight { background: rgba(249,115,22,0.3); color: var(--text-main); padding: 0 2px; border-radius: 3px; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .stat-grid-5 { grid-template-columns: repeat(2, 1fr); }
+            .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar custom-scrollbar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-row">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="10" fill="url(#lg)"/>
+                    <path d="M8 16h4l3-6 4 12 3-6h4" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs><linearGradient id="lg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#1e40af"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs>
+                </svg>
+                <div>
+                    <div class="sidebar-brand-title">PERSONNEL MIS</div>
+                    <div class="sidebar-brand-sub">DASHBOARD</div>
+                </div>
+            </div>
+            <p class="sidebar-desc">รายงานการเบิกจ่ายเงินเดือน ค่าจ้าง และบำเหน็จบำนาญ</p>
+        </div>
+
+        <!-- Theme Toggle -->
+        <div style="padding:14px 14px 5px">
+            <button class="theme-toggle-btn" id="themeToggle">
+                <span id="themeIcon">🌙</span>
+                <span id="themeLabel">โหมดมืด (Dark Mode)</span>
+            </button>
+        </div>
+
+        <!-- KPI Mini Cards -->
+        <div style="padding:10px 14px 10px" id="kpiMini"></div>
+
+        <!-- Filters -->
+        <div style="padding:4px 14px 14px;flex:1">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-top:10px;border-top:1px solid var(--border-color)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                <span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em">กรองหัวข้อ</span>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:10px">
+                <button onclick="selectAll()" style="flex:1;font-size:11px;font-weight:600;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border:none;border-radius:7px;padding:6px 0;cursor:pointer;font-family:inherit">เลือกทั้งหมด</button>
+                <button onclick="clearAll()" style="flex:1;font-size:11px;font-weight:600;background:var(--card-bg);color:var(--text-muted);border:1px solid var(--border-color);border-radius:7px;padding:6px 0;cursor:pointer;font-family:inherit">ล้าง</button>
+            </div>
+            <div id="filterList"></div>
+        </div>
+
+        <div style="padding:12px 16px;border-top:1px solid var(--border-color);text-align:center;font-size:11px;color:var(--text-muted)">
+            ข้อมูล ณ เดือน พฤษภาคม 2569
+        </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <main style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <header class="header-grad">
+            <div>
+                <h1 class="header-title">รายงานการเบิกจ่ายเงินเดือน ค่าจ้าง และบำเหน็จบำนาญ ประจำเดือน พฤษภาคม 2569</h1>
+                <p class="header-sub">กองบริหารการเบิกจ่ายเงินเดือน ค่าจ้าง บำเหน็จบำนาญ : กลุ่มงานวิเคราะห์และประเมินผล</p>
+            </div>
+            <button class="share-btn" onclick="openShare()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                แชร์ Dashboard
+            </button>
+        </header>
+
+        <div class="custom-scrollbar" id="dashboardArea" style="flex:1;overflow-y:auto;padding:24px 28px 40px">
+            <!-- Content injected by JS -->
+        </div>
+    </main>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay hidden" id="shareModal" onclick="closeShare()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">แชร์ Dashboard</div>
+                <div class="modal-subtitle">แชร์ลิงก์รายงาน</div>
+            </div>
+            <button class="modal-close" onclick="closeShare()">✕</button>
+        </div>
+        <div class="modal-link-row">
+            <div class="modal-link-box" id="shareUrl"></div>
+            <button class="modal-copy-btn" id="copyBtn" onclick="copyUrl()">📋 คัดลอก</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const workforceData = [
+    { name: 'ตำรวจ',   officers: 361424, employees: 749 },
+    { name: 'ทหาร',    officers: 495783, employees: 17798 },
+    { name: 'พลเรือน',   officers: 485135, employees: 25868 },
+    { name: 'มหาวิทยาลัย',  officers: 13642, employees: 2549 },
+    { name: 'ครู/บุคลากร',  officers: 454507, employees: 5574 },
+];
+const salaryData = [
+    { type: 'เงินเดือน รอบ 1',   count: 11353,   amount: 171.77 },
+    { type: 'เงินเดือน รอบ 2',  count: 1319041, amount: 48952.15 },
+    { type: 'ค่าจ้างประจำ รอบ 1',  count: 127,     amount: 1.03 },
+    { type: 'ค่าจ้างประจำ รอบ 2',  count: 29265,   amount: 985.15 },
+    { type: 'กบข. รอบ 1',   count: 9927,    amount: 29.36 },
+    { type: 'กบข. รอบ 2',   count: 1219224, amount: 4368.49 },
+    { type: 'กสจ. รอบ 1',   count: 117,     amount: 0.14 },
+    { type: 'กสจ. รอบ 2',   count: 25286,   amount: 53.59 },
+    { type: 'กยศ.ข้าราชการ',   count: 192922,  amount: 206.92 },
+    { type: 'กยศ.ลูกจ้าง',   count: 88, amount: 0.07 },
+];
+const conscriptData = [
+    { name: 'สป.กลาโหม',   count: 1206, amount: 9.67 },
+    { name: 'กองทัพบก',     count: 105310, amount: 848.83 },
+    { name: 'กองทัพเรือ',   count: 18686,  amount: 152.36 },
+    { name: 'กองทัพอากาศ',   count: 9446, amount: 75.45 },
+    { name: 'บก.กองทัพไทย',   count: 1268,  amount: 10.16 },
+];
+const budgetData = [
+    { month: 'ต.ค.68',  budget: 364288.75, allocated: 182144.38, spent: 39476.68 },
+    { month: 'พ.ย.68',  budget: 364288.75, allocated: 182144.38, spent: 73338.64 },
+    { month: 'ธ.ค.68',  budget: 364288.75, allocated: 182144.38, spent: 107183.05 },
+    { month: 'ม.ค.69',  budget: 364288.75, allocated: 182144.38, spent: 140911.26 },
+    { month: 'ก.พ.69',  budget: 364288.75, allocated: 182144.38, spent: 174477.18 },
+    { month: 'มี.ค.69',  budget: 364288.75, allocated: 273216.56, spent: 208003.79 },
+    { month: 'เม.ย.69',  budget: 364288.75, allocated: 273726.38, spent: 241722.48 },
+    { month: 'พ.ค.69',  budget: 364288.75, allocated: 364288.75, spent: 274726.38 },
+];
+const pensionData = [
+    { name: 'เบี้ยหวัด',    count: 5820,   amount: 78.92 },
+    { name: 'บำเหน็จปกติ',     count: 62,     amount: 28.07 },
+    { name: 'บำนาญปกติ',   count: 916349, amount: 28720.06 },
+    { name: 'บำนาญพิเศษ',   count: 9018,   amount: 88.72 },
+    { name: 'บำเหน็จตกทอด',   count: 4678,   amount: 731.74 },
+    { name: 'บำเหน็จลูกจ้าง',   count: 18,   amount: 3.47 },
+    { name: 'บำนาญตกทอด',   count: 113,   amount: 1.07 },
+    { name: 'บำเหน็จดำรงชีพ',   count: 7611,   amount: 1140.49 },
+    { name: 'บำนาญข้าราชการการเมือง',   count: 25,   amount: 0.34 },
+    { name: 'มาตรการพัฒนาและบริหารกำลังคนฯ',   count: 2,   amount: 1.35 },
+    { name: 'บำนาญพิเศษเหตุทุพพลภาพอาสาสมัคร',   count: 526,   amount: 9.00 },
+    { name: 'บำเหน็จปกติลูกจ้างตาย',   count: 11,   amount: 11.00 },
+    { name: 'บำนาญพิเศษเหตุทุพพลภาพ',    count: 1044,   amount: 16.36 },
+    { name: 'บำนาญพิเศษอาสาสมัครตาย',   count: 1051,   amount: 11.05 },
+    { name: 'บำเหน็จรายเดือน',   count: 107446, amount: 1902.16 },
+    { name: 'บำเหน็จพิเศษรายเดือน',   count: 1,   amount: 0.04 },
+    { name: 'บำเหน็จตกทอดผู้รับเหน็จรายเดือน/บำเหน็จพิเศษรายเดือน',   count: 384,   amount: 22.30 },
+    { name: 'บำเหน็จตกทอดค้ำประกัน',   count: 2451,   amount: 1661.83 },
+    { name: 'บำเหน็จตกทอดค้ำประกันลูกจ้าง',    count: 108,   amount: 25.42 },
+    { name: 'เงินทำขวัญ',    count: 1,   amount: 0.22 },
+];
+const certData = [
+    { name: 'กรมบัญชีกลาง',  received: 3700, approved: 3656 },
+    { name: 'สถาบันการเงิน', received: 2616, approved: 2561 },
+];
+
+const PALETTE = ['#1e40af', '#0ea5e9', '#f97316', '#3b82f6', '#ea580c'];
+const FMT = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
+
+// ─── STATE ─────────────────────────────────────────────
+let filters = { t1:true, t2:true, t3:true, t4:true, t5:true, t6:true, t7:true };
+let darkMode = false;
+let pensionSearch = '';
+let salarySort = { key: null, dir: 'asc' };
+let pensionSort = { key: null, dir: 'asc' };
+let chartInstances = {};
+
+const topics = [
+    { id:'t1', label:'อัตรากำลัง ขรก./ลจ.', emoji:'👥' },
+    { id:'t2', label:'จ่ายตรงเงินเดือน ขรก./ลจ.', emoji:'💵' },
+    { id:'t3', label:'จ่ายตรงทหารกองประจำการ', emoji:'🛡️' },
+    { id:'t4', label:'การจ่ายงบกลาง', emoji:'📈' },
+    { id:'t5', label:'จ่ายตรงบำนาญและเงินอื่น', emoji:'❤️' },
+    { id:'t6', label:'การออกหนังสือรับรอง', emoji:'📄' },
+    { id:'t7', label:'การจ่ายเงินสงเคราะห์', emoji:'🎁' },
+];
+
+// ─── COMPUTED VALUES ───────────────────────────────────
+const totalWorkforce = workforceData.reduce((a,d) => a + d.officers + d.employees, 0);
+const totalSalary = salaryData.reduce((a,d) => a + d.amount, 0);
+const totalConscript = conscriptData.reduce((a,d) => a + d.amount, 0);
+const latestBudget = budgetData[budgetData.length-1].spent;
+
+// ─── HELPERS ───────────────────────────────────────────
+function sortData(data, key, dir) {
+    if (!key) return [...data];
+    return [...data].sort((a, b) => {
+        const av = a[key], bv = b[key];
+        if (typeof av === 'string') return dir === 'asc' ? av.localeCompare(bv, 'th') : bv.localeCompare(av, 'th');
+        return dir === 'asc' ? av - bv : bv - av;
+    });
+}
+
+function highlightText(text, search) {
+    if (!search) return text;
+    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="highlight">$1</mark>');
+}
+
+function exportCSV(data, headers, filename) {
+    let csv = "\uFEFF" + headers.join(",") + "\r\n";
+    data.forEach(row => {
+        csv += row.map(v => typeof v === 'string' ? `"${v}"` : v).join(",") + "\r\n";
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ─── THEME ─────────────────────────────────────────────
+function toggleTheme() {
+    darkMode = !darkMode;
+    document.body.classList.toggle('dark-theme', darkMode);
+    document.getElementById('themeIcon').textContent = darkMode ? '☀️' : '🌙';
+    document.getElementById('themeLabel').textContent = darkMode ? 'โหมดสว่าง (Light Mode)' : 'โหมดมืด (Dark Mode)';
+    // Recreate charts with new theme colors
+    render();
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+// ─── FILTERS ───────────────────────────────────────────
+function toggleFilter(id) { filters[id] = !filters[id]; render(); }
+function selectAll() { Object.keys(filters).forEach(k => filters[k] = true); render(); }
+function clearAll() { Object.keys(filters).forEach(k => filters[k] = false); render(); }
+
+// ─── SHARE MODAL ───────────────────────────────────────
+function openShare() {
+    document.getElementById('shareUrl').textContent = window.location.href;
+    document.getElementById('shareModal').classList.remove('hidden');
+}
+function closeShare() { document.getElementById('shareModal').classList.add('hidden'); }
+function copyUrl() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.classList.add('copied');
+        btn.innerHTML = '✓ คัดลอกแล้ว';
+        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋 คัดลอก'; }, 2000);
+    });
+}
+
+// ─── SORT HANDLERS ─────────────────────────────────────
+function handleSalarySort(key) {
+    salarySort = { key, dir: salarySort.key === key && salarySort.dir === 'asc' ? 'desc' : 'asc' };
+    render();
+}
+function handlePensionSort(key) {
+    pensionSort = { key, dir: pensionSort.key === key && pensionSort.dir === 'asc' ? 'desc' : 'asc' };
+    render();
+}
+
+function sortIndicator(sortState, field) {
+    if (sortState.key !== field) return '<span style="opacity:0.25;margin-left:4px">↕</span>';
+    return sortState.dir === 'asc'
+        ? '<span style="color:var(--accent);margin-left:4px">↑</span>'
+        : '<span style="color:var(--accent);margin-left:4px">↓</span>';
+}
+
+// ─── CHART.JS THEME HELPER ─────────────────────────────
+function getChartColors() {
+    const cs = getComputedStyle(document.body);
+    return {
+        textMuted: cs.getPropertyValue('--text-muted').trim() || '#64748b',
+        border: cs.getPropertyValue('--border-color').trim() || '#e2e8f0',
+        textMain: cs.getPropertyValue('--text-main').trim() || '#0f172a',
+    };
+}
+
+// ─── RENDER KPI MINI (SIDEBAR) ─────────────────────────
+function renderKPIMini() {
+    const el = document.getElementById('kpiMini');
+    const items = [
+        { label:'อัตรากำลังรวม', value: FMT.format(totalWorkforce)+' คน', color:'var(--accent)' },
+        { label:'เงินเดือนรวม', value: FMT.format(totalSalary)+' ลบ.', color:'var(--accent2)' },
+        { label:'งบกลางเบิกจ่าย', value: FMT.format(latestBudget)+' ลบ.', color:'var(--accent3)' },
+        { label:'ทหารกองประจำการ', value: FMT.format(totalConscript)+' ลบ.', color:'var(--accent)' },
+    ];
+    el.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">ภาพรวมที่สำคัญ</div>` +
+        items.map(k => `<div class="kpi-mini"><span class="kpi-mini-label">${k.label}</span><span class="kpi-mini-value" style="color:${k.color}">${k.value}</span></div>`).join('');
+}
+
+// ─── RENDER FILTERS (SIDEBAR) ──────────────────────────
+function renderFilters() {
+    const el = document.getElementById('filterList');
+    el.innerHTML = topics.map(t => {
+        const checked = filters[t.id];
+        return `<div class="filter-label" onclick="toggleFilter('${t.id}')">
+            <div class="checkbox-box ${checked ? 'checked' : ''}">
+                ${checked ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:7px">
+                <span style="font-size:16px">${t.emoji}</span>
+                <span style="font-size:13px;color:${checked ? 'var(--text-main)' : 'var(--text-muted)'};font-weight:${checked ? 600 : 400}">${t.label}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ─── DESTROY ALL CHARTS ────────────────────────────────
+function destroyCharts() {
+    Object.values(chartInstances).forEach(c => c.destroy());
+    chartInstances = {};
+}
+
+// ─── MAIN RENDER ───────────────────────────────────────
+function render() {
+    renderKPIMini();
+    renderFilters();
+    destroyCharts();
+
+    const area = document.getElementById('dashboardArea');
+    const anyOn = Object.values(filters).some(v => v);
+
+    if (!anyOn) {
+        area.innerHTML = `<div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <p>กรุณาเลือกหัวข้อรายงานจากเมนูด้านซ้าย</p>
+        </div>`;
+        return;
+    }
+
+    let html = '<div class="dashboard-grid">';
+
+    // ─── T1: Workforce ─────────────────────────────────
+    if (filters.t1) {
+        html += `<div class="card animate-card full-width">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="section-badge" style="background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 10px rgba(37,99,235,0.3)">1</div>
+                    <div class="section-title">กรอบอัตรากำลังข้าราชการและลูกจ้างประจำ</div>
+                </div>
+            </div>
+            <div class="stat-grid-5">
+                ${workforceData.map(d => `<div class="stat-box">
+                    <div class="stat-box-label">${d.name}</div>
+                    <div class="stat-box-value">${FMT.format(d.officers)}</div>
+                    <div class="stat-box-sub">ข้าราชการ</div>
+                    <div class="stat-box-divider"></div>
+                    <div class="stat-box-secondary">${FMT.format(d.employees)}</div>
+                    <div class="stat-box-sub">ลูกจ้างประจำ</div>
+                </div>`).join('')}
+            </div>
+            <div class="chart-container" style="height:280px">
+                <canvas id="chartWorkforce"></canvas>
+            </div>
+        </div>`;
+    }
+
+    // ─── T2: Salary ────────────────────────────────────
+    if (filters.t2) {
+        const sorted = sortData(salaryData, salarySort.key, salarySort.dir);
+        const totalCount = salaryData.reduce((a,d) => a + d.count, 0);
+        const totalAmt = salaryData.reduce((a,d) => a + d.amount, 0);
+        html += `<div class="card animate-card">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="section-badge" style="background:linear-gradient(135deg,var(--accent2),#0284c7);box-shadow:0 4px 10px rgba(14,165,233,0.3)">2</div>
+                    <div class="section-title">การจ่ายตรงเงินเดือนและค่าจ้างประจำ</div>
+                </div>
+                <button class="export-btn" onclick="exportCSV(${JSON.stringify(sorted.map(r => [r.type, r.count, r.amount])).replace(/"/g,'&quot;')}, ['ประเภทเงิน','จำนวนราย','จำนวนเงิน (ลบ.)'], 'salary_may_69.csv')">⬇ CSV</button>
+            </div>
+            <div style="overflow-y:auto;max-height:360px" class="custom-scrollbar">
+                <table>
+                    <thead><tr>
+                        <th style="text-align:left" class="sortable-header" onclick="handleSalarySort('type')">ประเภทเงิน ${sortIndicator(salarySort,'type')}</th>
+                        <th style="text-align:right" class="sortable-header" onclick="handleSalarySort('count')">จำนวนราย ${sortIndicator(salarySort,'count')}</th>
+                        <th style="text-align:right" class="sortable-header" onclick="handleSalarySort('amount')">จำนวนเงิน (ลบ.) ${sortIndicator(salarySort,'amount')}</th>
+                    </tr></thead>
+                    <tbody>
+                        ${sorted.map(r => `<tr>
+                            <td style="font-weight:500">${r.type}</td>
+                            <td style="text-align:right;color:var(--text-muted);font-weight:600">${FMT.format(r.count)}</td>
+                            <td style="text-align:right;font-weight:700;color:var(--accent2)">${FMT.format(r.amount)}</td>
+                        </tr>`).join('')}
+                        <tr class="total-row"><td>รวมทั้งหมด</td><td style="text-align:right">${FMT.format(totalCount)}</td><td style="text-align:right">${FMT.format(totalAmt)}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+    }
+
+    // ─── T3: Conscript ─────────────────────────────────
+    if (filters.t3) {
+        html += `<div class="card animate-card">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="section-badge" style="background:linear-gradient(135deg,var(--accent),#1e40af);box-shadow:0 4px 10px rgba(30,64,175,0.3)">3</div>
+                    <div class="section-title">การจ่ายตรงเงินเดือนทหารกองประจำการ</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:260px;position:relative">
+                <canvas id="chartConscript"></canvas>
+                <div style="position:absolute;top:50%;left:38%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+                    <div style="font-size:10px;color:var(--text-muted);font-weight:600">รวม (ลบ.)</div>
+                    <div style="font-size:20px;font-weight:800;color:var(--text-main)">${FMT.format(totalConscript)}</div>
+                </div>
+            </div>
+            <div class="conscript-grid">
+                ${conscriptData.map((d,i) => `<div class="conscript-tag" style="border-left:3px solid ${PALETTE[i%PALETTE.length]}">
+                    <div class="conscript-tag-name">${d.name}</div>
+                    <div class="conscript-tag-val" style="color:${PALETTE[i%PALETTE.length]}">${FMT.format(d.count)} ราย</div>
+                </div>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    // ─── T4: Budget ────────────────────────────────────
+    if (filters.t4) {
+        html += `<div class="card animate-card full-width">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="section-badge" style="background:linear-gradient(135deg,var(--accent3),#f97316);box-shadow:0 4px 10px rgba(234,88,12,0.3)">4</div>
+                    <div class="section-title">การจ่ายงบกลาง รายการเงินเบี้ยหวัด บำเหน็จบำนาญ (สะสม)</div>
+                </div>
+            </div>
+            <div class="stat-grid-3">
+                <div class="budget-stat-box" style="background:rgba(30,64,175,0.06)">
+                    <div class="budget-stat-label">วงเงินงบประมาณ</div>
+                    <div class="budget-stat-value" style="color:#1e40af">${FMT.format(budgetData[0].budget)}</div>
+                    <div class="budget-stat-unit">ล้านบาท</div>
+                </div>
+                <div class="budget-stat-box" style="background:rgba(14,165,233,0.06)">
+                    <div class="budget-stat-label">วงเงินจัดสรร</div>
+                    <div class="budget-stat-value" style="color:#0ea5e9">${FMT.format(budgetData[0].allocated)}</div>
+                    <div class="budget-stat-unit">ล้านบาท</div>
+                </div>
+                <div class="budget-stat-box" style="background:rgba(249,115,22,0.06)">
+                    <div class="budget-stat-label">เบิกจ่ายสะสม (พ.ค.69)</div>
+                    <div class="budget-stat-value" style="color:#f97316">${FMT.format(latestBudget)}</div>
+                    <div class="budget-stat-unit">ล้านบาท</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:300px">
+                <canvas id="chartBudget"></canvas>
+            </div>
+        </div>`;
+    }
+
+    // ─── T5: Pension ───────────────────────────────────
+    if (filters.t5) {
+        const filtered = pensionData.filter(d => d.name.toLowerCase().includes(pensionSearch.trim().toLowerCase()));
+        const sorted = sortData(filtered, pensionSort.key, pensionSort.dir);
+        const totalC = filtered.reduce((a,d) => a + d.count, 0);
+        const totalA = filtered.reduce((a,d) => a + d.amount, 0);
+        html += `<div class="card animate-card">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="section-badge" style="background:linear-gradient(135deg,var(--accent3),#f97316);box-shadow:0 4px 10px rgba(234,88,12,0.3)">5</div>
+                    <div class="section-title">การจ่ายตรงบำนาญและเงินอื่นในลักษณะเดียวกัน</div>
+                </div>
+                <button class="export-btn" onclick="exportPensionCSV()">⬇ CSV</button>
+            </div>
+            <div class="search-container" style="margin-bottom:14px">
+                <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                <input type="text" placeholder="ค้นหารายการบำนาญ..." class="search-input" id="pensionSearchInput" value="${pensionSearch}" oninput="onPensionSearch(this.value)">
+                <button class="search-clear" id="pensionSearchClear" onclick="onPensionSearch('')" style="display:${pensionSearch ? 'block' : 'none'}">✕</button>
+            </div>
+            <div style="overflow-y:auto;max-height:320px" class="custom-scrollbar">
+                <table>
+                    <thead><tr>
+                        <th style="text-align:left" class="sortable-header" onclick="handlePensionSort('name')">รายการ ${sortIndicator(pensionSort,'name')}</th>
+                        <th style="text-align:right" class="sortable-header" onclick="handlePensionSort('count')">จำนวนราย ${sortIndicator(pensionSort,'count')}</th>
+                        <th style="text-align:right" class="sortable-header" onclick="handlePensionSort('amount')">จำนวนเงิน (ลบ.) ${sortIndicator(pensionSort,'amount')}</th>
+                    </tr></thead>
+                    <tbody>
+                        ${sorted.length === 0 ? '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px">ไม่พบข้อมูลที่ค้นหา</td></tr>' : sorted.map((r,i) => {
+                            const idx = pensionData.findIndex(x => x.name === r.name);
+                            const c = PALETTE[idx % PALETTE.length];
+                            return `<tr>
+                                <td style="font-weight:500"><span class="pension-dot" style="background:${c}"></span>${highlightText(r.name, pensionSearch)}</td>
+                                <td style="text-align:right;color:var(--text-muted);font-weight:600">${FMT.format(r.count)}</td>
+                                <td style="text-align:right;font-weight:700;color:var(--accent3)">${FMT.format(r.amount)}</td>
+                            </tr>`;
+                        }).join('')}
+                        <tr class="total-row-orange"><td>รวมทั้งหมด (${filtered.length} รายการ)</td><td style="text-align:right">${FMT.format(totalC)}</td><td style="text-align:right">${FMT.format(totalA)}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+    }
+
+    // ─── T6: Certificates ──────────────────────────────
+    if (filters.t6) {
+        html += `<div class="card animate-card">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="section-badge" style="background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 4px 10px rgba(37,99,235,0.3)">6</div>
+                    <div class="section-title">การออกหนังสือรับรอง และสิทธิบำเหน็จตกทอดค้ำประกัน</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:200px">
+                <canvas id="chartCert"></canvas>
+            </div>
+            <div class="stat-grid-2">
+                ${certData.map(d => {
+                    const pct = (d.approved / d.received * 100).toFixed(1);
+                    return `<div class="cert-box">
+                        <div class="cert-box-title">${d.name}</div>
+                        <div class="cert-row"><span class="cert-row-label">รับเรื่อง</span><span class="cert-row-value" style="color:#1e40af">${FMT.format(d.received)}</span></div>
+                        <div class="cert-row"><span class="cert-row-label">อนุมัติ</span><span class="cert-row-value" style="color:#f97316">${FMT.format(d.approved)}</span></div>
+                        <div class="cert-progress-track"><div class="cert-progress-fill" style="width:${pct}%"></div></div>
+                        <div class="cert-pct">${pct}% อนุมัติ</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    // ─── T7: Welfare ───────────────────────────────────
+    if (filters.t7) {
+        const welfareItems = [
+            { label:'อนุมัติจ่าย (ราย)', value: 0, icon:'👤', color:'#1e40af', bg:'rgba(30,64,175,0.06)' },
+            { label:'เงินชดเชย (ล้านบาท)', value: 0, icon:'💰', color:'#0ea5e9', bg:'rgba(14,165,233,0.06)' },
+            { label:'เงินดำรงชีพ (ล้านบาท)', value: 0, icon:'🏠', color:'#f97316', bg:'rgba(249,115,22,0.06)' },
+            { label:'เงินชดเชยระหว่างพักรักษาตัวที่ รพ. (ล้านบาท)', value: 0.612, icon:'🏥', color:'var(--accent3)', bg:'rgba(234,88,12,0.06)' },
+        ];
+        html += `<div class="card animate-card full-width">
+            <div class="section-header">
+                <div class="section-header-left">
+                    <div class="section-badge" style="background:linear-gradient(135deg,var(--accent3),#f97316);box-shadow:0 4px 10px rgba(234,88,12,0.3)">7</div>
+                    <div class="section-title">การจ่ายเงินสงเคราะห์ผู้ประสบภัย</div>
+                </div>
+            </div>
+            <div class="stat-grid-4">
+                ${welfareItems.map(s => `<div class="kpi-card" style="border-color:var(--border-color);background:${s.bg}">
+                    <div style="font-size:28px;margin-bottom:8px">${s.icon}</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600">${s.label}</div>
+                    <div style="font-size:32px;font-weight:900;color:${s.color};line-height:1">${s.value}</div>
+                </div>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    html += '</div>';
+    area.innerHTML = html;
+
+    // ─── CREATE CHARTS ─────────────────────────────────
+    requestAnimationFrame(() => {
+        const tc = getChartColors();
+        Chart.defaults.font.family = "'IBM Plex Sans Thai', 'Sarabun', sans-serif";
+
+        if (filters.t1) createWorkforceChart(tc);
+        if (filters.t3) createConscriptChart(tc);
+        if (filters.t4) createBudgetChart(tc);
+        if (filters.t6) createCertChart(tc);
+
+        // Re-focus pension search
+        if (filters.t5 && pensionSearch) {
+            const inp = document.getElementById('pensionSearchInput');
+            if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+        }
+    });
+}
+
+// ─── CHART CREATORS ────────────────────────────────────
+function createWorkforceChart(tc) {
+    const ctx = document.getElementById('chartWorkforce');
+    if (!ctx) return;
+    chartInstances.workforce = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: workforceData.map(d => d.name),
+            datasets: [
+                { label: 'ข้าราชการ', data: workforceData.map(d => d.officers), backgroundColor: '#1e40af', borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 }, borderSkipped: false },
+                { label: 'ลูกจ้างประจำ', data: workforceData.map(d => d.employees), backgroundColor: '#f97316', borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 }, borderSkipped: false },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: tc.textMuted, font: { size: 12 } } },
+                tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleColor: '#fff', bodyColor: '#fff', cornerRadius: 10, padding: 12 },
+            },
+            scales: {
+                x: { stacked: true, grid: { display: false }, ticks: { color: tc.textMuted, font: { size: 12 } }, border: { display: false } },
+                y: { stacked: true, grid: { color: tc.border, drawBorder: false }, ticks: { color: tc.textMuted, font: { size: 11 }, callback: v => FMT.format(v) }, border: { display: false } },
+            }
+        }
+    });
+}
+
+function createConscriptChart(tc) {
+    const ctx = document.getElementById('chartConscript');
+    if (!ctx) return;
+    chartInstances.conscript = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: conscriptData.map(d => d.name),
+            datasets: [{
+                data: conscriptData.map(d => d.amount),
+                backgroundColor: PALETTE,
+                borderWidth: 3, borderColor: darkMode ? '#1e293b' : '#ffffff',
+                hoverOffset: 8,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { position: 'right', labels: { color: tc.textMuted, font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 10 } },
+                tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleColor: '#fff', bodyColor: '#fff', cornerRadius: 10, padding: 12, callbacks: { label: ctx => `${ctx.label}: ${FMT.format(ctx.parsed)} ลบ.` } },
+            }
+        }
+    });
+}
+
+function createBudgetChart(tc) {
+    const ctx = document.getElementById('chartBudget');
+    if (!ctx) return;
+    chartInstances.budget = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: budgetData.map(d => d.month),
+            datasets: [
+                {
+                    label: 'เบิกจ่าย', data: budgetData.map(d => d.spent),
+                    borderColor: '#1e40af', backgroundColor: 'rgba(30,64,175,0.1)',
+                    borderWidth: 3, fill: true, tension: 0.3,
+                    pointRadius: 5, pointBackgroundColor: '#1e40af', pointBorderColor: '#fff', pointBorderWidth: 2,
+                },
+                {
+                    label: 'จัดสรร', data: budgetData.map(d => d.allocated),
+                    borderColor: '#f97316', borderWidth: 2.5, borderDash: [6, 4],
+                    fill: false, tension: 0.3,
+                    pointRadius: 4, pointBackgroundColor: '#f97316', pointBorderColor: '#fff', pointBorderWidth: 2,
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: tc.textMuted, font: { size: 12 } } },
+                tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleColor: '#fff', bodyColor: '#fff', cornerRadius: 10, padding: 12, callbacks: { label: ctx => `${ctx.dataset.label}: ${FMT.format(ctx.parsed.y)} ลบ.` } },
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: tc.textMuted, font: { size: 12 } }, border: { display: false } },
+                y: { grid: { color: tc.border, drawBorder: false }, ticks: { color: tc.textMuted, font: { size: 11 }, callback: v => FMT.format(v) }, border: { display: false } },
+            }
+        }
+    });
+}
+
+function createCertChart(tc) {
+    const ctx = document.getElementById('chartCert');
+    if (!ctx) return;
+    chartInstances.cert = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: certData.map(d => d.name),
+            datasets: [
+                { label: 'รับเรื่อง', data: certData.map(d => d.received), backgroundColor: '#1e40af', borderRadius: 6, barThickness: 20 },
+                { label: 'อนุมัติ',  data: certData.map(d => d.approved),  backgroundColor: '#f97316', borderRadius: 6, barThickness: 20 },
+            ]
+        },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: tc.textMuted, font: { size: 12 } } },
+                tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleColor: '#fff', bodyColor: '#fff', cornerRadius: 10, padding: 12 },
+            },
+            scales: {
+                x: { grid: { color: tc.border, drawBorder: false }, ticks: { color: tc.textMuted, font: { size: 11 } }, border: { display: false } },
+                y: { grid: { display: false }, ticks: { color: tc.textMain, font: { size: 12, weight: 600 } }, border: { display: false } },
+            }
+        }
+    });
+}
+
+// ─── PENSION SEARCH HANDLER ────────────────────────────
+function onPensionSearch(val) {
+    pensionSearch = val;
+    render();
+}
+
+function exportPensionCSV() {
+    const filtered = pensionData.filter(d => d.name.toLowerCase().includes(pensionSearch.trim().toLowerCase()));
+    const sorted = sortData(filtered, pensionSort.key, pensionSort.dir);
+    exportCSV(sorted.map(r => [r.name, r.count, r.amount]), ['รายการ','จำนวนราย','จำนวนเงิน (ลบ.)'], 'pension_may_69.csv');
+}
+
+// ─── INIT ──────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
